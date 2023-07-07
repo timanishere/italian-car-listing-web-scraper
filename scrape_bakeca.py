@@ -7,6 +7,29 @@ from bs4 import BeautifulSoup
 # Import requests library to request infomation from websites
 import requests
 
+# import psycopg2 module to connect to PostgreSQL database
+import psycopg2
+
+# Define database info
+hostname = 'localhost'
+database = 'it_car_dealers_db'
+username = 'postgres'
+pwd = 'Dice123!'
+port_id = '5432'
+
+# Reset connection and cursor
+conn = None
+cursor = None
+
+# Connect to database
+conn = psycopg2.connect(
+    host = hostname,
+    dbname = database,
+    user = username,
+    password = pwd,
+    port = port_id
+)
+
 #  Configure class
 class DealersInfo:
     def __init__(self, location, advert_url, profile_url, company_name, company_email_address, company_website, company_tel_1):
@@ -22,10 +45,13 @@ class DealersInfo:
 HEADERS = {'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'}
 
 # The main page to scrape from
-main_site = 'https://cagliari.bakeca.it/annunci/auto/'
+main_site = 'https://www.bakeca.it/annunci/auto/luogo/sardegna/'
 
 # Get information from bakeca.it
 webpage_1 = requests.get(main_site, headers=HEADERS,).text
+
+# Print messsage in terminal to know that scraping is in progress
+print(f'Scaping {main_site} in progress...')
 
 # Create instance of beautifulsoup for webpage_1
 soup = BeautifulSoup(webpage_1, 'lxml')
@@ -57,6 +83,8 @@ try:
 except AttributeError:
     last_page = 1 + 1
 
+counter = 0 
+
 for i in range(1, last_page):
 
     i = str(i)
@@ -77,6 +105,7 @@ for i in range(1, last_page):
 
         # Get dealers location
         dealer_location = advert_container.find('span', class_='text-sm text-slate-700 truncate block px-3').text
+        dealer_location = dealer_location.title()
 
         # Get advert url
         a_element_advert_url = advert_container.find('a', class_='flex relative')
@@ -125,6 +154,7 @@ for i in range(1, last_page):
             dealer_name = soup.find('h1', 'b-vetrina-titolo').text
             dealer_name = dealer_name.replace('\n', '')
             dealer_name = dealer_name[:-1]
+            dealer_name = dealer_name.title()
 
             # Get contact details from dealer profile
             ul_dealer_contact_details = soup.find('ul',class_='b-vetrina-info')
@@ -153,8 +183,6 @@ for i in range(1, last_page):
                     # Append number to the clean array if they contain a digit
                     dealer_tel_number_arr_clean.append(item)
             
-            
-
             # Get the dealers numbers
             dealer_tel_number_1 = dealer_tel_number_arr_clean[0]
             # dealer_tel_number_2 = dealer_tel_number_arr_clean[1]
@@ -212,17 +240,37 @@ for i in range(1, last_page):
             dealer_website = None
             dealer_tel_number_1 = None
 
+        # Open a cursor to perform SQL operationa
+        cursor = conn.cursor()
+
+        # Insert data into table
+        insert_script = 'INSERT INTO bakeca_raw (company_name, company_website, company_email_address, company_tel, profile_url, location, advert_url) VALUES(%s, %s, %s, %s, %s, %s, %s)'
+        insert_values = (dealer_name, dealer_website, dealer_email_address, dealer_tel_number_1, dealer_profile_url, dealer_location, advert_url)
+
+        # Execute insert script to insert values into the table
+        cursor.execute(insert_script, insert_values)
+
+        # Commit execution
+        conn.commit()
+
         # Populate object with dealers info
-        dealers_info = DealersInfo(dealer_location, advert_url, dealer_profile_url, dealer_name, dealer_email_address, dealer_website, dealer_tel_number_1)
+        # dealers_info = DealersInfo(dealer_location, advert_url, dealer_profile_url, dealer_name, dealer_email_address, dealer_website, dealer_tel_number_1)
+        
+        counter = counter + 1
+
+        print(f'Records added to database: {counter}')
 
         # Convert python object to json object
-        dealers_info_json = json.dumps(dealers_info.__dict__)
+        # dealers_info_json = json.dumps(dealers_info.__dict__)
 
         # Print each object in the terminal
-        print(dealers_info_json)
+        # print(dealers_info_json)
         
         # Append each object into the array
         # dealers_info_json_arr_raw.append(dealers_info_json)
 
     # print(dealers_info_json_arr_raw)
+print(f'Scaping {main_site} - COMPLETE')
+
+conn.close()
     
