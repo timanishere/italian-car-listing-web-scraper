@@ -10,6 +10,9 @@ import requests
 # import psycopg2 module to connect to PostgreSQL database
 import psycopg2
 
+# Import date class from datetime module
+from datetime import date
+
 # Define database info
 hostname = 'localhost'
 database = 'it_car_dealers_db'
@@ -32,7 +35,7 @@ conn = psycopg2.connect(
 
 #  Configure class
 class DealersInfo:
-    def __init__(self, location, advert_url, profile_url, company_name, company_email_address, company_website, company_tel_1):
+    def __init__(self, location, advert_url, profile_url, company_name, company_email_address, company_website, company_tel_1, import_date):
         self.location = location
         self.advert_url = advert_url
         self.profile_url = profile_url
@@ -40,12 +43,16 @@ class DealersInfo:
         self.company_email_address = company_email_address
         self.company_website = company_website
         self.company_tel_1 = company_tel_1
+        self.import_date = import_date
 
 # Configure headers to send fake user agent with every request. This fixes 403 response when making a response
 HEADERS = {'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'}
 
 # The main page to scrape from
 main_site = 'https://www.bakeca.it/annunci/auto/luogo/sardegna/'
+
+# Set import date as the current day
+import_date = date.today()
 
 # Get information from bakeca.it
 webpage_1 = requests.get(main_site, headers=HEADERS,).text
@@ -244,8 +251,8 @@ for i in range(1, last_page):
         cursor = conn.cursor()
 
         # Insert data into table
-        insert_script = 'INSERT INTO bakeca_raw (company_name, company_website, company_email_address, company_tel, profile_url, location, advert_url) VALUES(%s, %s, %s, %s, %s, %s, %s)'
-        insert_values = (dealer_name, dealer_website, dealer_email_address, dealer_tel_number_1, dealer_profile_url, dealer_location, advert_url)
+        insert_script = 'INSERT INTO bakeca_raw (company_name, company_website, company_email_address, company_tel, profile_url, location, advert_url, import_date) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)'
+        insert_values = (dealer_name, dealer_website, dealer_email_address, dealer_tel_number_1, dealer_profile_url, dealer_location, advert_url, import_date)
 
         # Execute insert script to insert values into the table
         cursor.execute(insert_script, insert_values)
