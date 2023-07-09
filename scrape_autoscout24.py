@@ -54,7 +54,7 @@ HEADERS = {'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWeb
 main_site = 'https://www.autoscout24.it/lst?atype=C&cy=I&damaged_listing=exclude&desc=0&lat=39.30531&lon=9.20454&page=1&powertype=kw&search_id=ad0dgnwsfq&sort=standard&source=listpage_pagination&ustate=N%2CU&zip=sinnai'
 
 # Print messsage in terminal to know that scraping is in progress
-print(f'Scaping {main_site} in progress...')
+print(f'Scraping {main_site} in progress...')
 
 # Set import date as the current day
 import_date = date.today()
